@@ -1,5 +1,7 @@
 *~
 lex.yy.c
 parser.tab.c
+parser.tab.cpp
 parser.tab.h
+parser.tab.hpp
 a.out

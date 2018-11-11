@@ -1,29 +1,30 @@
 %option noyywrap
 
 %{
-#include "parser.tab.h"
+#include "parser.tab.hpp"
 
-void yyerror(const char* s);
+#define YY_DECL yy::parser::symbol_type yylex()
 %}
 
 %%
 
-"sin" { return SIN; }
-"cos" { return COS; }
-"exp" { return EXP; }
-"ln" { return LN; }
-"(" { return LPAREN; }
-")" { return RPAREN; }
-"+" { return ADD; }
-"-" { return SUB; }
-"*" { return MUL; }
-"/" { return DIV; }
-"^" { return POW; }
+"sin" { return yy::parser::make_SIN(); }
+"cos" { return yy::parser::make_COS(); }
+"exp" { return yy::parser::make_EXP(); }
+"ln" { return yy::parser::make_LN(); }
+"(" { return yy::parser::make_LPAREN(); }
+")" { return yy::parser::make_RPAREN(); }
+"+" { return yy::parser::make_ADD(); }
+"-" { return yy::parser::make_SUB(); }
+"*" { return yy::parser::make_MUL(); }
+"/" { return yy::parser::make_DIV(); }
+"^" { return yy::parser::make_POW(); }
 
-[a-z] { return VAR; }
-[0-9]+ { return NUM; }
+[a-z] { return yy::parser::make_VAR(yytext); }
+[0-9]+ { return yy::parser::make_NUM(std::stoi(yytext)); }
 
 [ \t] { }
-. { yyerror("bad input char"); }
+. { std::cout << "Ignoring unknown character: " << yytext << std::endl; }
 
+<<EOF>> { return yy::parser::make_END(); }
 %%

@@ -1,0 +1,59 @@
+%skeleton "lalr1.cc"
+%require "3.2"
+%defines
+
+%define api.token.constructor
+%define api.value.type variant
+%define parse.assert
+
+%code requires {
+  #include <stdio.h>
+  #include "ast.h"
+}
+
+%code {
+  yy::parser::symbol_type yylex();
+}
+
+%token <int> NUM
+%token <std::string> VAR
+
+%token END 0
+%token LPAREN RPAREN
+%token ADD SUB MUL DIV POW
+%token SIN COS EXP LN
+
+%type <std::unique_ptr<Node>> exp
+
+%left ADD SUB
+%left MUL DIV
+%left POW
+
+%%
+
+input: exp { std::cout << "Value is " << $1->value() << std::endl; }
+
+exp: NUM { $$ = std::make_unique<Scalar>($1); }
+| VAR { $$ = std::make_unique<Variable>($1); }
+| LPAREN exp RPAREN { $$ = std::move($2); }
+| exp ADD exp { $$ = std::make_unique<Add>(std::move($1), std::move($3)); }
+| exp SUB exp { $$ = std::make_unique<Sub>(std::move($1), std::move($3)); }
+| exp MUL exp { $$ = std::make_unique<Mul>(std::move($1), std::move($3)); }
+| exp DIV exp { $$ = std::make_unique<Div>(std::move($1), std::move($3)); }
+| exp POW exp { $$ = std::make_unique<Pow>(std::move($1), std::move($3)); }
+| SIN LPAREN exp RPAREN { $$ = std::make_unique<Sin>(std::move($3)); }
+| COS LPAREN exp RPAREN { $$ = std::make_unique<Cos>(std::move($3)); }
+| EXP LPAREN exp RPAREN { $$ = std::make_unique<Exp>(std::move($3)); }
+| LN LPAREN exp RPAREN { $$ = std::make_unique<NatLog>(std::move($3)); }
+
+%%
+
+int main(int argc, char* argv[]) {
+  yy::parser parser;
+  parser.parse();
+}
+
+void yy::parser::error (const std::string& s)
+{
+  std::cout << s << std::endl;
+}
