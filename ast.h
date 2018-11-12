@@ -1,19 +1,26 @@
+#pragma once
+
 #include <iostream>
 #include <cmath>
+#include <map>
+
+using Variables = std::map<std::string, double>;
 
 class Node {
 public:
   virtual ~Node() = default;
-  virtual double value() const = 0;
+  virtual double value(const Variables& vars) const = 0;
 };
 
 class Scalar: public Node {
 private:
-  int scalar;
+  double scalar;
 public:
-  Scalar(int scalar): scalar(scalar) {}
+  Scalar(double scalar): scalar(scalar) {}
 
-  double value() const override { return static_cast<double>(scalar); }
+  double value(const Variables& vars) const override {
+    return scalar;
+  }
 };
 
 class Variable: public Node {
@@ -22,7 +29,9 @@ private:
 public:
   Variable(std::string name): name(name) {}
 
-  double value() const override { return 0; }
+  double value(const Variables& vars) const override {
+    return vars.at(name);
+  }
 };
 
 class BinaryOp: public Node {
@@ -39,7 +48,9 @@ public:
   Add(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
     : BinaryOp(std::move(left), std::move(right)) {}
 
-  double value() const override { return left->value() + right->value(); }
+  double value(const Variables& vars) const override {
+    return left->value(vars) + right->value(vars);
+  }
 };
 
 class Sub: public BinaryOp {
@@ -47,7 +58,9 @@ public:
   Sub(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
     : BinaryOp(std::move(left), std::move(right)) {}
 
-  double value() const override { return left->value() - right->value(); }
+  double value(const Variables& vars) const override {
+    return left->value(vars) - right->value(vars);
+  }
 };
 
 class Mul: public BinaryOp {
@@ -55,7 +68,9 @@ public:
   Mul(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
     : BinaryOp(std::move(left), std::move(right)) {}
 
-  double value() const override { return left->value() * right->value(); }
+  double value(const Variables& vars) const override {
+    return left->value(vars) * right->value(vars);
+  }
 };
 
 class Div: public BinaryOp {
@@ -63,7 +78,9 @@ public:
   Div(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
     : BinaryOp(std::move(left), std::move(right)) {}
 
-  double value() const override { return left->value() / right->value(); }
+  double value(const Variables& vars) const override {
+    return left->value(vars) / right->value(vars);
+  }
 };
 
 class Pow: public BinaryOp {
@@ -71,7 +88,9 @@ public:
   Pow(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
     : BinaryOp(std::move(left), std::move(right)) {}
 
-  double value() const override { return std::pow(left->value(), right->value()); }
+  double value(const Variables& vars) const override {
+    return std::pow(left->value(vars), right->value(vars));
+  }
 };
 
 class UnaryOp: public Node {
@@ -85,26 +104,34 @@ class Sin: public UnaryOp {
 public:
   Sin(std::unique_ptr<Node> child): UnaryOp(std::move(child)) {}
 
-  double value() const override { return std::sin(child->value()); }
+  double value(const Variables& vars) const override {
+    return std::sin(child->value(vars));
+  }
 };
 
 class Cos: public UnaryOp {
 public:
   Cos(std::unique_ptr<Node> child): UnaryOp(std::move(child)) {}
 
-  double value() const override { return std::cos(child->value()); }
+  double value(const Variables& vars) const override {
+    return std::cos(child->value(vars));
+  }
 };
 
 class Exp: public UnaryOp {
 public:
   Exp(std::unique_ptr<Node> child): UnaryOp(std::move(child)) {}
 
-  double value() const override { return std::exp(child->value()); }
+  double value(const Variables& vars) const override {
+    return std::exp(child->value(vars));
+  }
 };
 
 class NatLog: public UnaryOp {
 public:
   NatLog(std::unique_ptr<Node> child): UnaryOp(std::move(child)) {}
 
-  double value() const override { return std::log(child->value()); }
+  double value(const Variables& vars) const override {
+    return std::log(child->value(vars));
+  }
 };

@@ -6,22 +6,28 @@
 %define api.value.type variant
 %define parse.assert
 
+%parse-param { ParseResult& parseResult }
+
 %code requires {
   #include <stdio.h>
   #include "ast.h"
+  #include "parseresult.h"
 }
 
 %code {
   yy::parser::symbol_type yylex();
 }
 
-%token <int> NUM
+%token END 0
+
+%token <double> NUM
 %token <std::string> VAR
 
-%token END 0
 %token LPAREN RPAREN
 %token ADD SUB MUL DIV POW
 %token SIN COS EXP LN
+
+%token SEMICOLON EQUALS COMMA
 
 %type <std::unique_ptr<Node>> exp
 
@@ -31,7 +37,8 @@
 
 %%
 
-input: exp { std::cout << "Value is " << $1->value() << std::endl; }
+input: exp { parseResult.ast = std::move($1); }
+| exp SEMICOLON assignments { parseResult.ast = std::move($1); }
 
 exp: NUM { $$ = std::make_unique<Scalar>($1); }
 | VAR { $$ = std::make_unique<Variable>($1); }
@@ -46,11 +53,22 @@ exp: NUM { $$ = std::make_unique<Scalar>($1); }
 | EXP LPAREN exp RPAREN { $$ = std::make_unique<Exp>(std::move($3)); }
 | LN LPAREN exp RPAREN { $$ = std::make_unique<NatLog>(std::move($3)); }
 
+assignments: assignment
+| assignments COMMA assignment
+
+assignment: VAR EQUALS NUM { parseResult.vars.insert(std::make_pair($1, $3)); }
+
 %%
 
 int main(int argc, char* argv[]) {
-  yy::parser parser;
+  ParseResult parseResult;
+  yy::parser parser(parseResult);
   parser.parse();
+
+  std::cout << "Evaluates to " << parseResult.ast->value(parseResult.vars) << std::endl;
+  for (auto& v : parseResult.vars) {
+    std::cout << v.first << ": " << v.second << std::endl;
+  }
 }
 
 void yy::parser::error (const std::string& s)

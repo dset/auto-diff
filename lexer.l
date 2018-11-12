@@ -20,8 +20,12 @@
 "/" { return yy::parser::make_DIV(); }
 "^" { return yy::parser::make_POW(); }
 
+";" { return yy::parser::make_SEMICOLON(); }
+"=" { return yy::parser::make_EQUALS(); }
+"," { return yy::parser::make_COMMA(); }
+
 [a-z] { return yy::parser::make_VAR(yytext); }
-[0-9]+ { return yy::parser::make_NUM(std::stoi(yytext)); }
+([0-9]+)|([0-9]+\.[0-9]+) { return yy::parser::make_NUM(std::stod(yytext)); }
 
 [ \t] { }
 . { std::cout << "Ignoring unknown character: " << yytext << std::endl; }
