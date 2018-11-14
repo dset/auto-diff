@@ -41,13 +41,13 @@ input: exp { parseResult.ast = std::move($1); }
 | exp SEMICOLON assignments { parseResult.ast = std::move($1); }
 
 exp: NUM { $$ = std::make_unique<Scalar>($1); }
-| VAR { $$ = std::make_unique<Variable>($1); }
+| VAR { $$ = std::make_unique<Variable>($1); parseResult.arguments.insert($1); }
 | LPAREN exp RPAREN { $$ = std::move($2); }
 | exp ADD exp { $$ = std::make_unique<Add>(std::move($1), std::move($3)); }
 | exp SUB exp { $$ = std::make_unique<Sub>(std::move($1), std::move($3)); }
 | exp MUL exp { $$ = std::make_unique<Mul>(std::move($1), std::move($3)); }
 | exp DIV exp { $$ = std::make_unique<Div>(std::move($1), std::move($3)); }
-| exp POW exp { $$ = std::make_unique<Pow>(std::move($1), std::move($3)); }
+| exp POW NUM { $$ = std::make_unique<Pow>(std::move($1), $3); }
 | SIN LPAREN exp RPAREN { $$ = std::make_unique<Sin>(std::move($3)); }
 | COS LPAREN exp RPAREN { $$ = std::make_unique<Cos>(std::move($3)); }
 | EXP LPAREN exp RPAREN { $$ = std::make_unique<Exp>(std::move($3)); }
@@ -65,9 +65,24 @@ int main(int argc, char* argv[]) {
   yy::parser parser(parseResult);
   parser.parse();
 
-  std::cout << "Evaluates to " << parseResult.ast->value(parseResult.vars) << std::endl;
-  for (auto& v : parseResult.vars) {
-    std::cout << v.first << ": " << v.second << std::endl;
+  for (const auto& farg : parseResult.arguments) {
+    if (parseResult.vars.find(farg) == parseResult.vars.end()) {
+      std::cout << "Uninitialized variable: " << farg << std::endl;
+      return 1;
+    }
+  }
+
+  double fvalue = parseResult.ast->value(parseResult.vars, "").first;
+
+  std::map<std::string, double> grad;
+  for (const auto& farg: parseResult.arguments) {
+    Dual res = parseResult.ast->value(parseResult.vars, farg);
+    grad.insert(std::make_pair(farg, res.second));
+  }
+
+  std::cout << "Function value: " << fvalue << std::endl;
+  for (const auto& partial: grad) {
+    std::cout << "Partial derivative d/d" << partial.first << ": " << partial.second << std::endl;
   }
 }
 
